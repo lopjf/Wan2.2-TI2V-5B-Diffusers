@@ -1,0 +1,10 @@
+torch>=2.0.0
+torchvision
+git+https://github.com/huggingface/diffusers
+transformers>=4.30.0
+accelerate>=0.20.0
+pillow>=9.0.0
+requests>=2.28.0
+runpod>=1.6.0
+opencv-python-headless>=4.8.0
+einops>=0.7.0

@@ -1,0 +1,42 @@
+# RunPod Configuration File
+# This file can be used with the RunPod CLI for deployment
+
+name: wan-i2v-serverless
+description: Image-to-Video generation using Wan2.2-TI2V-5B-Diffusers
+
+# Docker configuration
+image:
+  # Update this with your Docker Hub username after building
+  name: your-dockerhub-username/wan-i2v:latest
+  # Or use GitHub Container Registry
+  # name: ghcr.io/your-github-username/wan-i2v:latest
+
+# GPU configuration
+gpu:
+  types:
+    - "NVIDIA RTX 4090"
+    - "NVIDIA A6000"
+    - "NVIDIA A40"
+  count: 1
+
+# Resource limits
+resources:
+  cpu: 8
+  memory: 32  # GB
+  disk: 20    # GB (minimum for model cache)
+
+# Scaling configuration
+scaling:
+  min_workers: 0   # Scale to zero when idle (cost saving)
+  max_workers: 3   # Max concurrent workers
+  idle_timeout: 300  # Seconds before scaling down
+
+# Container configuration
+container:
+  start_command: "python -u handler.py"
+
+# Environment variables (optional)
+env:
+  # HF_TOKEN: "your-huggingface-token"  # If model requires authentication
+  # LOG_LEVEL: "INFO"
+  PYTHONUNBUFFERED: "1"
