@@ -4,6 +4,10 @@ FROM pytorch/pytorch:2.1.1-cuda12.1-cudnn8-runtime
 # Set working directory
 WORKDIR /app
 
+# Prevent interactive prompts during build
+ENV DEBIAN_FRONTEND=noninteractive
+ENV TZ=Etc/UTC
+
 # Install system dependencies
 RUN apt-get update && apt-get install -y \
     git \
