@@ -4,6 +4,7 @@ Image-to-Video Generation Endpoint
 """
 
 import os
+import sys
 import base64
 import torch
 import runpod
@@ -13,9 +14,14 @@ import requests
 from io import BytesIO
 import tempfile
 import logging
+import traceback
 
 # Configure logging
-logging.basicConfig(level=logging.INFO)
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    stream=sys.stdout
+)
 logger = logging.getLogger(__name__)
 
 # Global pipeline variable for model caching
@@ -44,32 +50,45 @@ def load_pipeline():
         logger.info("Using cached pipeline")
         return pipeline
 
+    logger.info("="*50)
     logger.info("Loading Wan2.2-TI2V-5B-Diffusers pipeline...")
+    logger.info(f"CUDA available: {torch.cuda.is_available()}")
+    if torch.cuda.is_available():
+        logger.info(f"CUDA device: {torch.cuda.get_device_name(0)}")
+        logger.info(f"CUDA memory: {torch.cuda.get_device_properties(0).total_memory / 1024**3:.2f} GB")
+    logger.info("="*50)
+
     model_id = "Wan-AI/Wan2.2-TI2V-5B-Diffusers"
 
     try:
         # Load VAE in float32 for better quality
+        logger.info("Loading VAE...")
         vae = AutoencoderKLWan.from_pretrained(
             model_id,
             subfolder="vae",
             torch_dtype=torch.float32
         )
-        logger.info("VAE loaded successfully")
+        logger.info("✓ VAE loaded successfully")
 
         # Load pipeline in bfloat16 for efficiency
+        logger.info("Loading main pipeline...")
         pipeline = WanPipeline.from_pretrained(
             model_id,
             vae=vae,
             torch_dtype=torch.bfloat16
         )
+        logger.info("✓ Pipeline loaded successfully")
 
         # Move to GPU
+        logger.info("Moving pipeline to GPU...")
         pipeline.to("cuda")
-        logger.info("Pipeline loaded and moved to GPU")
+        logger.info("✓ Pipeline ready on GPU")
+        logger.info("="*50)
 
         return pipeline
     except Exception as e:
         logger.error(f"Failed to load pipeline: {str(e)}")
+        logger.error(traceback.format_exc())
         raise
 
 
@@ -164,9 +183,24 @@ def generate_video(job):
 
     except Exception as e:
         logger.error(f"Error during video generation: {str(e)}")
+        logger.error(traceback.format_exc())
         raise
 
 
 if __name__ == "__main__":
-    logger.info("Starting RunPod Serverless Handler for Wan2.2-TI2V-5B")
+    logger.info("="*60)
+    logger.info("RunPod Serverless Handler for Wan2.2-TI2V-5B Starting...")
+    logger.info("="*60)
+    logger.info(f"Python version: {sys.version}")
+    logger.info(f"PyTorch version: {torch.__version__}")
+    logger.info(f"CUDA available: {torch.cuda.is_available()}")
+    if torch.cuda.is_available():
+        logger.info(f"CUDA version: {torch.version.cuda}")
+        logger.info(f"GPU: {torch.cuda.get_device_name(0)}")
+    logger.info(f"Working directory: {os.getcwd()}")
+    logger.info(f"HF_HOME: {os.getenv('HF_HOME', 'not set')}")
+    logger.info("="*60)
+    logger.info("Handler ready - waiting for jobs...")
+    logger.info("="*60)
+
     runpod.serverless.start({"handler": generate_video})
