@@ -2,9 +2,10 @@
 
 If your workers have been stuck in "Initializing" for 2+ days, follow these steps:
 
-## The Problem
+## The Problems
 
-Your Dockerfile was trying to download the 20GB model during the Docker build process, which times out on RunPod's build servers.
+1. **Invalid Base Image**: The Docker base image `runpod/pytorch:2.1.0-py3.10-cuda12.1.0-devel-ubuntu22.04` doesn't exist
+2. **Model Pre-download**: Dockerfile was trying to download the 20GB model during build, which times out
 
 ## The Fix
 
@@ -87,16 +88,28 @@ No changes needed! The API format is exactly the same.
 
 ## What Changed?
 
-### Before (BAD - causes timeout):
+### 1. Fixed Base Image
+
+**Before (BAD - image doesn't exist):**
 ```dockerfile
-# Pre-download the model to speed up cold starts
+FROM runpod/pytorch:2.1.0-py3.10-cuda12.1.0-devel-ubuntu22.04
+```
+
+**After (GOOD - official PyTorch image):**
+```dockerfile
+FROM pytorch/pytorch:2.1.1-cuda12.1-cudnn8-runtime
+```
+
+### 2. Removed Model Pre-download
+
+**Before (BAD - causes timeout):**
+```dockerfile
 RUN python -c "from huggingface_hub import snapshot_download; \
     snapshot_download('Wan-AI/Wan2.2-TI2V-5B-Diffusers', ...)"
 ```
 
-### After (GOOD - downloads on first run):
+**After (GOOD - downloads on first run):**
 ```dockerfile
-# Set HuggingFace cache directory (model will download on first run)
 ENV HF_HOME=/workspace/model_cache
 ENV HF_HUB_ENABLE_HF_TRANSFER=1  # Faster downloads
 ```
